@@ -44,8 +44,8 @@ def webscraper(league, passing_url,shooting_url):
     EPL_player_df = pd.merge(assists_df, shooting_df, on='Player')
     
     # Export to .csv so we can use in tableau
-    assists_df.to_csv(league+'FBRef_Assists.csv', encoding='utf-8', index=False)
-    shooting_df.to_csv(league+'FBRef_Goals.csv', encoding='utf-8', index=False)
+    #assists_df.to_csv(league+'FBRef_Assists.csv', encoding='utf-8', index=False)
+    #shooting_df.to_csv(league+'FBRef_Goals.csv', encoding='utf-8', index=False)
     EPL_player_df.to_csv('FBRef_'+league+'_Player_Data.csv', encoding='utf-8', index=False)
 
 
