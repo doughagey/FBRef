@@ -33,7 +33,7 @@ def webscraper(league, passing_url,shooting_url):
     
     #Cut out the parts we really don't need
     assists_df = assists_df[['Rk','Player','Position','Squad','90s','Assists','xA', 'Assists-xA','KeyPasses', 'Total Completed Passes', 'Total Attempted Passes', 'Total Pass Completion %', 'Short Completed Passes', 'Short Attempted Passes', 'Short Pass Completion %', 'Medium Completed Passes', 'Medium Attempted Passes', 'Medium Pass Completion %', 'Long Completed Passes', 'Long Attempted Passes', 'Long Pass Completion %', 'Through Ball Passes', 'Corner Kicks', 'Passes into final third', 'Passes Into Penalty Box', 'Crosses into Penalty Box']]
-    shooting_df = shooting_df[['Rk','Player','Goals','PK', 'PK Attempts','Shots Total', 'Shots on Target', 'FK Shots', 'Shots on Target %', 'Shots per 90', 'SOT per 90', 'Goals per Shot', 'Goals per SOT', 'xG', 'npxG', 'npxG per Shot', 'Goals minus xG', 'np Goals minus xG ']]
+    shooting_df = shooting_df[['Rk','Goals','PK', 'PK Attempts','Shots Total', 'Shots on Target', 'FK Shots', 'Shots on Target %', 'Shots per 90', 'SOT per 90', 'Goals per Shot', 'Goals per SOT', 'xG', 'npxG', 'npxG per Shot', 'Goals minus xG', 'np Goals minus xG ']]
     
     #Replace Position indentifiers with something more useful
     assists_df['Position'] = assists_df['Position'].str.slice(0,2)
