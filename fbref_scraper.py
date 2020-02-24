@@ -8,6 +8,7 @@ Created on Sun Nov 24 17:50:36 2019
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 import pandas as pd
+import time
 
 # Use selenium to get the FPL data from the fbref website and put it into a Pandas Dataframe
 def webscraper(league, passing_url,shooting_url):
@@ -16,10 +17,13 @@ def webscraper(league, passing_url,shooting_url):
     options.headless = True
     driver = webdriver.Firefox(options=options)
     driver.get(passing_url)
+    time.sleep(5)
+    
     #info = driver.find_element_by_xpath("//*[@id=\"stats_standard\"]/tbody")
     assists_df = pd.read_html(driver.page_source)[10]
     
     driver.get(shooting_url)
+    time.sleep(5)
     #info = driver.find_element_by_xpath("//*[@id=\"stats_standard\"]/tbody")
     shooting_df = pd.read_html(driver.page_source)[10]
     driver.close()
@@ -57,3 +61,6 @@ def webscraper(league, passing_url,shooting_url):
 EPL = webscraper('EPL', 'https://fbref.com/en/comps/9/passing/Premier-League-Stats', 'https://fbref.com/en/comps/9/shooting/Premier-League-Stats')
 LaLiga = webscraper('LaLiga', 'https://fbref.com/en/comps/12/passing/La-Liga-Stats','https://fbref.com/en/comps/12/shooting/La-Liga-Stats')
 Bundesliga = webscraper('BundesLiga', 'https://fbref.com/en/comps/20/passing/Bundesliga-Stats', 'https://fbref.com/en/comps/20/shooting/Bundesliga-Stats')
+SerieA = webscraper('SerieA', 'https://fbref.com/en/comps/11/passing/Serie-A-Stats', 'https://fbref.com/en/comps/11/shooting/Serie-A-Stats')
+Ligue1 = webscraper('Ligue1', 'https://fbref.com/en/comps/13/passing/Ligue-1-Stats', 'https://fbref.com/en/comps/13/shooting/Ligue-1-Stats')
+ChampionsLeague = webscraper('ChampionsLeague', 'https://fbref.com/en/comps/8/passing/Champions-League-Stats', 'https://fbref.com/en/comps/8/shooting/Champions-League-Stats')
