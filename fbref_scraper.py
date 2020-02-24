@@ -6,11 +6,15 @@ Created on Sun Nov 24 17:50:36 2019
 @author: doug hagey
 """
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 import pandas as pd
 
 # Use selenium to get the FPL data from the fbref website and put it into a Pandas Dataframe
 def webscraper(league, passing_url,shooting_url):
-    driver = webdriver.Firefox()
+    print('Scraping data for',league)
+    options = Options()
+    options.headless = True
+    driver = webdriver.Firefox(options=options)
     driver.get(passing_url)
     #info = driver.find_element_by_xpath("//*[@id=\"stats_standard\"]/tbody")
     assists_df = pd.read_html(driver.page_source)[10]
@@ -46,6 +50,7 @@ def webscraper(league, passing_url,shooting_url):
     # Export to .csv so we can use in tableau]
     #assists_df.to_csv(league+'FBRef_Assists.csv', encoding='utf-8', index=False)
     #shooting_df.to_csv(league+'FBRef_Goals.csv', encoding='utf-8', index=False)
+    print('Writing csv file for',league)
     EPL_player_df.to_csv('FBRef_'+league+'_Player_Data.csv', encoding='utf-8', index=False)
 
 
