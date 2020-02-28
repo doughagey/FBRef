@@ -50,7 +50,7 @@ def webscraper(league, passing_url,shooting_url):
         passing_df= passing_df.replace({'Position': position_map})
         #Drop the duplicate columns before merging
         passing_df.drop(['Player', 'Nation', 'Position','Squad', 'Age', 'Born', '90s','Matches'], axis=1, inplace=True)
-        shooting_df.drop(['Matches'])
+        shooting_df.drop(['Matches'], axis=1, inplace=True)
 
         #Merge the dataframes so that we have all the info together
         EPL_player_df = pd.merge(shooting_df, passing_df, on='Rk')
@@ -68,10 +68,33 @@ def webscraper(league, passing_url,shooting_url):
         driver.close()
         time.sleep(5)
 
-EPL = webscraper('EPL', 'https://fbref.com/en/comps/9/passing/Premier-League-Stats', 'https://fbref.com/en/comps/9/shooting/Premier-League-Stats')
-LaLiga = webscraper('LaLiga', 'https://fbref.com/en/comps/12/passing/La-Liga-Stats','https://fbref.com/en/comps/12/shooting/La-Liga-Stats')
-Bundesliga = webscraper('BundesLiga', 'https://fbref.com/en/comps/20/passing/Bundesliga-Stats', 'https://fbref.com/en/comps/20/shooting/Bundesliga-Stats')
-SerieA = webscraper('SerieA', 'https://fbref.com/en/comps/11/passing/Serie-A-Stats', 'https://fbref.com/en/comps/11/shooting/Serie-A-Stats')
-Ligue1 = webscraper('Ligue1', 'https://fbref.com/en/comps/13/passing/Ligue-1-Stats', 'https://fbref.com/en/comps/13/shooting/Ligue-1-Stats')
-ChampionsLeague = webscraper('ChampionsLeague', 'https://fbref.com/en/comps/8/passing/Champions-League-Stats', 'https://fbref.com/en/comps/8/shooting/Champions-League-Stats')
+print('Which league do you want to scrape FBRef.com for?')
+print('1 - English Premier League')
+print('2 - La Liga')
+print('3 - Bundesliga')
+print('4 - Serie A')
+print('5 - Ligue 1')
+print('6 - Champions League')
+league = input('Type a single number or hit enter for all:')
 
+if len(league)<1:
+    EPL = webscraper('EPL', 'https://fbref.com/en/comps/9/passing/Premier-League-Stats', 'https://fbref.com/en/comps/9/shooting/Premier-League-Stats')
+    LaLiga = webscraper('LaLiga', 'https://fbref.com/en/comps/12/passing/La-Liga-Stats','https://fbref.com/en/comps/12/shooting/La-Liga-Stats')
+    Bundesliga = webscraper('BundesLiga', 'https://fbref.com/en/comps/20/passing/Bundesliga-Stats', 'https://fbref.com/en/comps/20/shooting/Bundesliga-Stats')
+    SerieA = webscraper('SerieA', 'https://fbref.com/en/comps/11/passing/Serie-A-Stats', 'https://fbref.com/en/comps/11/shooting/Serie-A-Stats')
+    Ligue1 = webscraper('Ligue1', 'https://fbref.com/en/comps/13/passing/Ligue-1-Stats', 'https://fbref.com/en/comps/13/shooting/Ligue-1-Stats')
+    ChampionsLeague = webscraper('ChampionsLeague', 'https://fbref.com/en/comps/8/passing/Champions-League-Stats', 'https://fbref.com/en/comps/8/shooting/Champions-League-Stats')
+elif league == '1':
+    EPL = webscraper('EPL', 'https://fbref.com/en/comps/9/passing/Premier-League-Stats', 'https://fbref.com/en/comps/9/shooting/Premier-League-Stats')
+elif league == '2':
+    LaLiga = webscraper('LaLiga', 'https://fbref.com/en/comps/12/passing/La-Liga-Stats','https://fbref.com/en/comps/12/shooting/La-Liga-Stats')
+elif league == '3':
+    Bundesliga = webscraper('BundesLiga', 'https://fbref.com/en/comps/20/passing/Bundesliga-Stats', 'https://fbref.com/en/comps/20/shooting/Bundesliga-Stats')
+elif league == '4':
+    SerieA = webscraper('SerieA', 'https://fbref.com/en/comps/11/passing/Serie-A-Stats', 'https://fbref.com/en/comps/11/shooting/Serie-A-Stats')
+elif league == '5':
+    Ligue1 = webscraper('Ligue1', 'https://fbref.com/en/comps/13/passing/Ligue-1-Stats', 'https://fbref.com/en/comps/13/shooting/Ligue-1-Stats')
+elif league == '6':
+    ChampionsLeague = webscraper('ChampionsLeague', 'https://fbref.com/en/comps/8/passing/Champions-League-Stats', 'https://fbref.com/en/comps/8/shooting/Champions-League-Stats')
+else:
+    print('Invalid value selected!')
