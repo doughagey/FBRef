@@ -50,6 +50,8 @@ def webscraper(league, passing_url,shooting_url):
         passing_df= passing_df.replace({'Position': position_map})
         #Drop the duplicate columns before merging
         passing_df.drop(['Player', 'Nation', 'Position','Squad', 'Age', 'Born', '90s','Matches'], axis=1, inplace=True)
+        shooting_df.drop(['Matches'])
+
         #Merge the dataframes so that we have all the info together
         EPL_player_df = pd.merge(shooting_df, passing_df, on='Rk')
         #print(EPL_player_df.head(5))
