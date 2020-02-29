@@ -5,28 +5,46 @@ Created on Sun Nov 24 17:50:36 2019
 
 @author: doug hagey
 """
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-import pandas as pd
-import time
 
-# Use selenium to get the FPL data from the fbref website and put it into a Pandas Dataframe
-def webscraper(league, passing_url,shooting_url):
+import pandas as pd
+import requests
+
+# Use requests to get the FPL data from the fbref website and put it into a Pandas Dataframe
+def webscraper(league, passing_url,shooting_url, misc_url):
     try:
         print('Scraping data for',league)
-        options = Options()
-        options.headless = True
-        driver = webdriver.Firefox(options=options)
-        driver.get(passing_url)
-        time.sleep(10)
-        # Have to use header=1 because there are two headers on the passing table
-        # NOT using header=1 will cause the column names to be oddly named and it won't merge properly later
-        passing_df = pd.read_html(driver.page_source, header=1)[10]
+        
+        # Scrape data from passing URL
+        print('    Scraping Passing Table')
+        page_source = requests.get(passing_url)
+        page_replace_open_tag = page_source.text.replace('<!--\n   <div class="table_outer_container"','<div class ="table_outer_container">')
+        page_good_tags = page_replace_open_tag.replace('</div>\n-->','</div>')
+        passing_df = pd.read_html(page_good_tags, header=1)[1]
+        print('        Found',len(passing_df.columns),'columns of data')
+        if len(passing_df.columns)<3 and len(passing_df.columns)>0:
+            print('    Was not able to load table')
 
-        driver.get(shooting_url)
-        time.sleep(10)
-        #shooting_element = driver.find_element_by_xpath("//*[@id=\"stats_shooting\"]/tbody")
-        shooting_df = pd.read_html(driver.page_source)[10]
+
+        # Scrape data from shooting URL
+        print('    Scraping Shooting Table')
+        page_source = requests.get(shooting_url)
+        page_replace_open_tag = page_source.text.replace('<!--\n   <div class="table_outer_container"','<div class ="table_outer_container">')
+        page_good_tags = page_replace_open_tag.replace('</div>\n-->','</div>')
+        shooting_df = pd.read_html(page_good_tags)[1]
+        print('        Found',len(shooting_df.columns),'columns of data')
+        if len(shooting_df.columns)<3 and len(shooting_df.columns)>0:
+            print('    Was not able to load table')
+
+        #Scrape data from misc URL
+        print('    Scraping Misc Table')
+        # This page also has an additional header we need to ignore
+        page_source = requests.get(misc_url)
+        page_replace_open_tag = page_source.text.replace('<!--\n   <div class="table_outer_container"','<div class ="table_outer_container">')
+        page_good_tags = page_replace_open_tag.replace('</div>\n-->','</div>')
+        misc_df = pd.read_html(page_good_tags, header=1)[1]
+        print('        Found',len(misc_df.columns),'columns of data')
+        if len(misc_df.columns)<3 and len(misc_df.columns)>0:
+            print('    Was not able to load table')
 
         # Rename the df columns to something more useful by using a map vs. just renaming, which is dangerous if things move around
         passing_df = passing_df.rename(columns={'Pos':'Position','Ast':'Assists','A-xA':'Assists-xA','KP':'KeyPasses','Left':'Passes With LF', 'Right':'Passes with RF', 'FK':'Free Kick Passes', 'TB':'Through Ball Passes', 'CK':'Corner Kicks', 'TI':'Throw Ins', '1/3':'Passes into final third', 'PPA':'Passes Into Penalty Box', 'CrsPA':'Crosses into Penalty Box'})
@@ -38,35 +56,35 @@ def webscraper(league, passing_url,shooting_url):
         # Passing df has names that are duplicates because the top row was chopped off earlier, needed to rename them to clarify
         passing_df = passing_df.rename(columns={'Cmp.1':'Short Passes Completed','Att.1':'Short Attempted Passes','Cmp%.1':'Short Passes Completed%','Cmp.2':'Medium Passes Completed','Att.2':'Medium Passes Attempted','Cmp%.2':'Medium Passes Completed%','Cmp.3':'Long Passes Completed','Att.3':'Long Passes Attempted','Cmp%.3':'Long Passes Completed%','Cmp':'Total Passes Completed','Att':'Total Passes Attempted','Cmp%':'Total Passes Completed%'})
         shooting_df = shooting_df[shooting_df.Player != 'Player']
+        misc_df = misc_df.rename(columns={'Pos':'Position','Fls':'FoulsCommitted','Fld':'FoulsDrawn','Off':'Offsides','Crs':'Crosses', 'TklW':'SuccessfulTackles','Int':'Interceptions','Succ':'SuccessfulDribbles','Att':'AttemptedDribbles','Succ%':'SuccessfulDribbles%','#Pl':'PlayersDribbledPast','Megs':'Nutmegs','Tkl':'DribblersTackled','Att.1':'DribblesContested','Tkl%':'%DribblersTackled','Past':'DribbledPastByOpponent'})
+        misc_df = misc_df[misc_df.Player != 'Player']
 
         # Get rid of the rows that have NaN as they are bogus and don't relate to players
         shooting_df = shooting_df.fillna(0)
-        #print(shooting_df.head(5))
         
         #Replace Position indentifiers with something more useful
         shooting_df['Position'] = shooting_df['Position'].str.slice(0,2)
         position_map = {'DF':'DEF', 'FW':'FWD', 'MF':'MID'}
         shooting_df = shooting_df.replace({'Position': position_map})
         passing_df= passing_df.replace({'Position': position_map})
+        
         #Drop the duplicate columns before merging
-        passing_df.drop(['Player', 'Nation', 'Position','Squad', 'Age', 'Born', '90s','Matches'], axis=1, inplace=True)
+        passing_df.drop(['Nation', 'Position','Squad', 'Age', 'Born', '90s','Matches'], axis=1, inplace=True)
         shooting_df.drop(['Matches'], axis=1, inplace=True)
+        misc_df.drop(['Nation', 'Position','Squad', 'Age', 'Born', '90s','Matches'], axis=1, inplace=True)
 
-        #Merge the dataframes so that we have all the info together
-        EPL_player_df = pd.merge(shooting_df, passing_df, on='Rk')
+        #Merge the dataframes so that we have all the info together - on requires a list in brackets
+        EPL_player_df = pd.merge(shooting_df, passing_df, on=['Rk','Player'])
+        EPL_player_df = pd.merge(EPL_player_df, misc_df, on=['Rk','Player'])
         #print(EPL_player_df.head(5))
         
         # Export to .csv so we can use in tableau]
-        #assists_df.to_csv(league+'FBRef_Assists.csv', encoding='utf-8', index=False)
-        #shooting_df.to_csv(league+'FBRef_Goals.csv', encoding='utf-8', index=False)
         print('Writing csv file for',league)
         EPL_player_df.to_csv('FBRef_'+league+'_Player_Data.csv', encoding='utf-8', index=False)
-        driver.close()
-    
+
     except Exception as e:
         print(e)
-        driver.close()
-        time.sleep(5)
+
 
 print('Which league do you want to scrape FBRef.com for?')
 print('1 - English Premier League')
@@ -75,26 +93,26 @@ print('3 - Bundesliga')
 print('4 - Serie A')
 print('5 - Ligue 1')
 print('6 - Champions League')
-league = input('Type a single number or hit enter for all:')
+league = input('Type a single league number or hit enter for all leagues:')
 
 if len(league)<1:
-    EPL = webscraper('EPL', 'https://fbref.com/en/comps/9/passing/Premier-League-Stats', 'https://fbref.com/en/comps/9/shooting/Premier-League-Stats')
-    LaLiga = webscraper('LaLiga', 'https://fbref.com/en/comps/12/passing/La-Liga-Stats','https://fbref.com/en/comps/12/shooting/La-Liga-Stats')
-    Bundesliga = webscraper('BundesLiga', 'https://fbref.com/en/comps/20/passing/Bundesliga-Stats', 'https://fbref.com/en/comps/20/shooting/Bundesliga-Stats')
-    SerieA = webscraper('SerieA', 'https://fbref.com/en/comps/11/passing/Serie-A-Stats', 'https://fbref.com/en/comps/11/shooting/Serie-A-Stats')
-    Ligue1 = webscraper('Ligue1', 'https://fbref.com/en/comps/13/passing/Ligue-1-Stats', 'https://fbref.com/en/comps/13/shooting/Ligue-1-Stats')
-    ChampionsLeague = webscraper('ChampionsLeague', 'https://fbref.com/en/comps/8/passing/Champions-League-Stats', 'https://fbref.com/en/comps/8/shooting/Champions-League-Stats')
+    EPL = webscraper('EPL', 'https://fbref.com/en/comps/9/passing/Premier-League-Stats', 'https://fbref.com/en/comps/9/shooting/Premier-League-Stats','https://fbref.com/en/comps/9/misc/Premier-League-Stats')
+    LaLiga = webscraper('LaLiga', 'https://fbref.com/en/comps/12/passing/La-Liga-Stats','https://fbref.com/en/comps/12/shooting/La-Liga-Stats','https://fbref.com/en/comps/12/misc/La-Liga-Stats')
+    Bundesliga = webscraper('BundesLiga', 'https://fbref.com/en/comps/20/passing/Bundesliga-Stats', 'https://fbref.com/en/comps/20/shooting/Bundesliga-Stats','https://fbref.com/en/comps/20/misc/Bundesliga-Stats')
+    SerieA = webscraper('SerieA', 'https://fbref.com/en/comps/11/passing/Serie-A-Stats', 'https://fbref.com/en/comps/11/shooting/Serie-A-Stats','https://fbref.com/en/comps/11/misc/Serie-A-Stats')
+    Ligue1 = webscraper('Ligue1', 'https://fbref.com/en/comps/13/passing/Ligue-1-Stats', 'https://fbref.com/en/comps/13/shooting/Ligue-1-Stats','https://fbref.com/en/comps/13/misc/Ligue-1-Stats')
+    ChampionsLeague = webscraper('ChampionsLeague', 'https://fbref.com/en/comps/8/passing/Champions-League-Stats', 'https://fbref.com/en/comps/8/shooting/Champions-League-Stats','https://fbref.com/en/comps/8/misc/Champions-League-Stats')
 elif league == '1':
-    EPL = webscraper('EPL', 'https://fbref.com/en/comps/9/passing/Premier-League-Stats', 'https://fbref.com/en/comps/9/shooting/Premier-League-Stats')
+    EPL = webscraper('EPL', 'https://fbref.com/en/comps/9/passing/Premier-League-Stats', 'https://fbref.com/en/comps/9/shooting/Premier-League-Stats','https://fbref.com/en/comps/9/misc/Premier-League-Stats')
 elif league == '2':
-    LaLiga = webscraper('LaLiga', 'https://fbref.com/en/comps/12/passing/La-Liga-Stats','https://fbref.com/en/comps/12/shooting/La-Liga-Stats')
+    LaLiga = webscraper('LaLiga', 'https://fbref.com/en/comps/12/passing/La-Liga-Stats','https://fbref.com/en/comps/12/shooting/La-Liga-Stats','https://fbref.com/en/comps/12/misc/La-Liga-Stats')
 elif league == '3':
-    Bundesliga = webscraper('BundesLiga', 'https://fbref.com/en/comps/20/passing/Bundesliga-Stats', 'https://fbref.com/en/comps/20/shooting/Bundesliga-Stats')
+    Bundesliga = webscraper('BundesLiga', 'https://fbref.com/en/comps/20/passing/Bundesliga-Stats', 'https://fbref.com/en/comps/20/shooting/Bundesliga-Stats','https://fbref.com/en/comps/20/misc/Bundesliga-Stats')
 elif league == '4':
-    SerieA = webscraper('SerieA', 'https://fbref.com/en/comps/11/passing/Serie-A-Stats', 'https://fbref.com/en/comps/11/shooting/Serie-A-Stats')
+    SerieA = webscraper('SerieA', 'https://fbref.com/en/comps/11/passing/Serie-A-Stats', 'https://fbref.com/en/comps/11/shooting/Serie-A-Stats','https://fbref.com/en/comps/11/misc/Serie-A-Stats')
 elif league == '5':
-    Ligue1 = webscraper('Ligue1', 'https://fbref.com/en/comps/13/passing/Ligue-1-Stats', 'https://fbref.com/en/comps/13/shooting/Ligue-1-Stats')
+    Ligue1 = webscraper('Ligue1', 'https://fbref.com/en/comps/13/passing/Ligue-1-Stats', 'https://fbref.com/en/comps/13/shooting/Ligue-1-Stats','https://fbref.com/en/comps/13/misc/Ligue-1-Stats')
 elif league == '6':
-    ChampionsLeague = webscraper('ChampionsLeague', 'https://fbref.com/en/comps/8/passing/Champions-League-Stats', 'https://fbref.com/en/comps/8/shooting/Champions-League-Stats')
+    ChampionsLeague = webscraper('ChampionsLeague', 'https://fbref.com/en/comps/8/passing/Champions-League-Stats', 'https://fbref.com/en/comps/8/shooting/Champions-League-Stats','https://fbref.com/en/comps/8/misc/Champions-League-Stats')
 else:
     print('Invalid value selected!')
